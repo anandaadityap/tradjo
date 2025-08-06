@@ -7,7 +7,10 @@ import {
   TradeWithPlan,
   TradingPlanWithTrades,
   TradeStats,
-  TradeStatus
+  TradeStatus,
+  CreateCapitalAdditionInput,
+  UpdateCapitalAdditionInput,
+  CapitalAdditionWithPlan
 } from './types'
 
 // Trading Plan Services
@@ -38,6 +41,11 @@ export async function getTradingPlans(): Promise<TradingPlanWithTrades[]> {
           createdAt: 'desc',
         },
       },
+      capitalAdditions: {
+        orderBy: {
+          addedAt: 'desc',
+        },
+      },
     },
     orderBy: {
       createdAt: 'desc',
@@ -52,6 +60,11 @@ export async function getTradingPlanById(id: string): Promise<TradingPlanWithTra
       trades: {
         orderBy: {
           createdAt: 'desc',
+        },
+      },
+      capitalAdditions: {
+        orderBy: {
+          addedAt: 'desc',
         },
       },
     },
@@ -268,5 +281,96 @@ export async function getTradeStats(tradingPlanId?: string): Promise<TradeStats>
     initialCapital,
     currentCapital,
     totalReturn,
+  }
+}
+
+// Capital Addition Services
+export async function createCapitalAddition(data: CreateCapitalAdditionInput): Promise<CapitalAdditionWithPlan> {
+  return await prisma.capitalAddition.create({
+    data: {
+      amount: data.amount,
+      description: data.description,
+      addedAt: data.addedAt || new Date(),
+      tradingPlanId: data.tradingPlanId,
+    },
+    include: {
+      tradingPlan: true,
+    },
+  })
+}
+
+export async function getCapitalAdditions(): Promise<CapitalAdditionWithPlan[]> {
+  return await prisma.capitalAddition.findMany({
+    include: {
+      tradingPlan: true,
+    },
+    orderBy: {
+      addedAt: 'desc',
+    },
+  })
+}
+
+export async function getCapitalAdditionsByPlan(tradingPlanId: string): Promise<CapitalAdditionWithPlan[]> {
+  return await prisma.capitalAddition.findMany({
+    where: { tradingPlanId },
+    include: {
+      tradingPlan: true,
+    },
+    orderBy: {
+      addedAt: 'desc',
+    },
+  })
+}
+
+export async function getCapitalAdditionById(id: string): Promise<CapitalAdditionWithPlan | null> {
+  return await prisma.capitalAddition.findUnique({
+    where: { id },
+    include: {
+      tradingPlan: true,
+    },
+  })
+}
+
+export async function updateCapitalAddition(data: UpdateCapitalAdditionInput): Promise<CapitalAdditionWithPlan> {
+  const { id, ...updateData } = data
+  return await prisma.capitalAddition.update({
+    where: { id },
+    data: updateData,
+    include: {
+      tradingPlan: true,
+    },
+  })
+}
+
+export async function deleteCapitalAddition(id: string) {
+  return await prisma.capitalAddition.delete({
+    where: { id },
+  })
+}
+
+// Enhanced Trading Plan Services with Capital Additions
+// Note: getTradingPlanById already includes capitalAdditions
+
+// Enhanced Stats with Capital Additions
+export async function getEnhancedTradeStats(tradingPlanId?: string): Promise<TradeStats & { totalCapitalAdded: number }> {
+  const stats = await getTradeStats(tradingPlanId)
+  
+  const whereClause = tradingPlanId ? { tradingPlanId } : {}
+  const capitalAdditions = await prisma.capitalAddition.findMany({
+    where: whereClause,
+  })
+  
+  const totalCapitalAdded = capitalAdditions.reduce((sum, addition) => sum + addition.amount, 0)
+  
+  // Recalculate current capital and return percentage with capital additions
+  const adjustedCurrentCapital = stats.initialCapital + totalCapitalAdded + stats.totalPnL
+  const totalInvested = stats.initialCapital + totalCapitalAdded
+  const adjustedTotalReturn = totalInvested > 0 ? (stats.totalPnL / totalInvested) * 100 : 0
+  
+  return {
+    ...stats,
+    totalCapitalAdded,
+    currentCapital: adjustedCurrentCapital,
+    totalReturn: adjustedTotalReturn,
   }
 }

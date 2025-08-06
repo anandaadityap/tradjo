@@ -28,6 +28,7 @@ model TradingPlan {
   
   // Relations
   trades          Trade[]
+  capitalAdditions CapitalAddition[]
   
   @@map("trading_plans")
 }
@@ -72,6 +73,22 @@ model Trade {
   tradingPlanId   String
   
   @@map("trades")
+}
+
+// Capital Addition Model - untuk mencatat penambahan modal berkala
+model CapitalAddition {
+  id              String   @id @default(cuid())
+  amount          Float    // Jumlah modal yang ditambahkan
+  description     String?  // Deskripsi penambahan modal (misal: "Modal bulanan Januari 2024")
+  addedAt         DateTime @default(now()) // Tanggal penambahan modal
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  // Relations
+  tradingPlan     TradingPlan @relation(fields: [tradingPlanId], references: [id])
+  tradingPlanId   String
+  
+  @@map("capital_additions")
 }
 
 // Enums

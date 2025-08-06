@@ -1,4 +1,4 @@
-import { Trade, TradingPlan, TradeType, TradeStatus } from '../generated/prisma'
+import { Trade, TradingPlan, TradeType, TradeStatus, CapitalAddition } from '../generated/prisma'
 
 // Extended types with relations
 export type TradeWithPlan = Trade & {
@@ -7,6 +7,11 @@ export type TradeWithPlan = Trade & {
 
 export type TradingPlanWithTrades = TradingPlan & {
   trades: Trade[]
+  capitalAdditions?: CapitalAddition[]
+}
+
+export type CapitalAdditionWithPlan = CapitalAddition & {
+  tradingPlan: TradingPlan
 }
 
 // Form types for creating/updating
@@ -46,6 +51,18 @@ export type CreateTradingPlanInput = {
 export type UpdateTradingPlanInput = Partial<CreateTradingPlanInput> & {
   id: string
   isActive?: boolean
+}
+
+// Capital Addition form types
+export type CreateCapitalAdditionInput = {
+  amount: number
+  description?: string
+  addedAt?: Date
+  tradingPlanId: string
+}
+
+export type UpdateCapitalAdditionInput = Partial<CreateCapitalAdditionInput> & {
+  id: string
 }
 
 // Utility types
