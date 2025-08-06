@@ -20,11 +20,10 @@ import {
   MoreHorizontal,
   TrendingUp,
   TrendingDown,
-  Clock,
   CheckCircle,
-  XCircle,
+  Edit,
   DollarSign,
-} from "lucide-react";
+} from "lucide-react"
 import { TradeWithPlan, TradeStatus, TradeType } from "@/lib/types";
 
 interface TradesTableProps {
@@ -58,19 +57,13 @@ export function TradesTable({
 
   const getStatusBadge = (status: TradeStatus) => {
     const statusConfig = {
-      PENDING: { variant: "secondary" as const, icon: Clock, label: "Pending" },
       OPEN: { variant: "default" as const, icon: TrendingUp, label: "Open" },
       CLOSED: {
         variant: "outline" as const,
         icon: CheckCircle,
         label: "Closed",
       },
-      CANCELLED: {
-        variant: "destructive" as const,
-        icon: XCircle,
-        label: "Cancelled",
-      },
-    };
+    } as const;
 
     const config = statusConfig[status];
     const Icon = config.icon;
@@ -193,6 +186,7 @@ export function TradesTable({
                         </DropdownMenuItem>
                       )}
                       <DropdownMenuItem onClick={() => onEditTrade?.(trade)}>
+                        <Edit className="h-4 w-4 mr-2" />
                         Edit
                       </DropdownMenuItem>
                       <DropdownMenuItem

@@ -22,8 +22,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(newTrade, { status: 201 })
   } catch (error) {
     console.error('Error creating trade:', error)
+    console.error('Error details:', error instanceof Error ? error.message : error)
     return NextResponse.json(
-      { error: 'Failed to create trade' },
+      { error: 'Failed to create trade', details: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
     )
   }

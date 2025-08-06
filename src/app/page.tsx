@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { TradingStats } from "@/components/trading-stats";
 import { TradesTable } from "@/components/trades-table";
 import { AddTradeForm } from "@/components/add-trade-form";
+import { EditTradeForm } from "@/components/edit-trade-form";
 import { AddTradingPlanForm } from "@/components/add-trading-plan-form";
 import { TradingPlanCard } from "@/components/trading-plan-card";
 import { CloseTradeDialog } from "@/components/close-trade-dialog";
@@ -22,6 +23,7 @@ import {
   TradeWithPlan,
   TradingPlanWithTrades,
   CreateTradeInput,
+  UpdateTradeInput,
   CreateTradingPlanInput,
   TradeStats as TradeStatsType,
   TradeStatus,
@@ -193,6 +195,15 @@ export default function Home() {
     trade: null,
   });
 
+  // Edit Trade Dialog State
+  const [editTradeDialog, setEditTradeDialog] = useState<{
+    open: boolean;
+    trade: TradeWithPlan | null;
+  }>({
+    open: false,
+    trade: null,
+  });
+
   // Load trading plans from database
   const loadTradingPlans = async () => {
     try {
@@ -248,14 +259,18 @@ export default function Home() {
       setTrades((prev) => [newTrade, ...prev]);
       // Reload stats after adding trade
       loadStats();
+      console.log("Trade berhasil ditambahkan:", newTrade.symbol);
     } catch (error) {
       console.error("Error adding trade:", error);
+      // You can add a toast notification here in the future
     }
   };
 
   const handleEditTrade = (trade: TradeWithPlan) => {
-    // TODO: Implement edit functionality - open edit dialog
-    console.log("Edit trade:", trade);
+    setEditTradeDialog({
+      open: true,
+      trade,
+    });
   };
 
   const handleDeleteTrade = async (tradeId: string) => {
@@ -291,6 +306,25 @@ export default function Home() {
       }
     } catch (error) {
       console.error("Error adding trading plan:", error);
+    }
+  };
+
+  const handleEditTradeSubmit = async (
+    tradeId: string,
+    updateData: Omit<UpdateTradeInput, 'id'>
+  ) => {
+    try {
+      const updatedTrade = await updateTradeAPI({ id: tradeId, ...updateData });
+      setTrades((prev) =>
+        prev.map((trade) => (trade.id === tradeId ? updatedTrade : trade))
+      );
+      // Reload stats after updating trade
+      loadStats();
+
+      // Close the dialog
+      setEditTradeDialog({ open: false, trade: null });
+    } catch (error) {
+      console.error("Error updating trade:", error);
     }
   };
 
@@ -530,6 +564,17 @@ export default function Home() {
             setCloseTradeDialog((prev) => ({ ...prev, open }))
           }
           onCloseTrade={handleCloseTradeSubmit}
+        />
+
+        {/* Edit Trade Dialog */}
+        <EditTradeForm
+          trade={editTradeDialog.trade}
+          open={editTradeDialog.open}
+          onOpenChange={(open) =>
+            setEditTradeDialog((prev) => ({ ...prev, open }))
+          }
+          tradingPlans={tradingPlans}
+          onEditTrade={handleEditTradeSubmit}
         />
       </div>
     </div>

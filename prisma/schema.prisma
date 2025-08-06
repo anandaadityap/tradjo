@@ -38,7 +38,7 @@ model Trade {
   id              String      @id @default(cuid())
   symbol          String      // e.g., "EURUSD", "BTCUSD"
   type            TradeType   // BUY or SELL
-  status          TradeStatus @default(PENDING)
+  status          TradeStatus @default(OPEN)
   
   // Entry details
   entryPrice      Float
@@ -98,8 +98,6 @@ enum TradeType {
 }
 
 enum TradeStatus {
-  PENDING
   OPEN
   CLOSED
-  CANCELLED
 }
