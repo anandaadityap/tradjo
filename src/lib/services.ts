@@ -117,6 +117,29 @@ export async function getTradeById(id: string): Promise<TradeWithPlan | null> {
 
 export async function updateTrade(data: UpdateTradeInput) {
   const { id, ...updateData } = data
+  
+  // If exitPrice is being updated, recalculate P&L
+  if (updateData.exitPrice !== undefined) {
+    // Get the current trade to access entry price, type, and quantity
+    const currentTrade = await prisma.trade.findUnique({
+      where: { id },
+    })
+    
+    if (currentTrade) {
+      // Calculate P&L based on the new exit price
+      const priceDifference = currentTrade.type === 'BUY' 
+        ? updateData.exitPrice - currentTrade.entryPrice 
+        : currentTrade.entryPrice - updateData.exitPrice
+
+      const pnl = priceDifference * currentTrade.quantity
+      const pnlPercentage = (priceDifference / currentTrade.entryPrice) * 100
+
+      // Add calculated P&L to update data
+      updateData.pnl = pnl
+      updateData.pnlPercentage = pnlPercentage
+    }
+  }
+  
   return await prisma.trade.update({
     where: { id },
     data: updateData,

@@ -573,7 +573,6 @@ export default function Home() {
           onOpenChange={(open) =>
             setEditTradeDialog((prev) => ({ ...prev, open }))
           }
-          tradingPlans={tradingPlans}
           onEditTrade={handleEditTradeSubmit}
         />
       </div>
