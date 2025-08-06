@@ -244,7 +244,18 @@ export async function getTradeStats(tradingPlanId?: string): Promise<TradeStats>
 
   const totalWins = winningTradesData.reduce((sum, trade) => sum + (trade.pnl || 0), 0)
   const totalLosses = Math.abs(losingTradesData.reduce((sum, trade) => sum + (trade.pnl || 0), 0))
-  const profitFactor = totalLosses > 0 ? totalWins / totalLosses : 0
+  
+  // Calculate profit factor with correct logic
+  let profitFactor = 0
+  if (totalLosses > 0) {
+    profitFactor = totalWins / totalLosses
+  } else if (totalWins > 0) {
+    // If there are wins but no losses, profit factor should be very high
+    profitFactor = 999.99
+  } else {
+    // If no wins and no losses, profit factor is 0
+    profitFactor = 0
+  }
 
   // Calculate max drawdown
   let runningPnL = 0
