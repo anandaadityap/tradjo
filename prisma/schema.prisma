@@ -1,0 +1,87 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Trading Plan Model
+model TradingPlan {
+  id              String   @id @default(cuid())
+  name            String
+  description     String?
+  riskRewardRatio Float    @default(2.0) // Default 1:2 risk reward
+  maxLossAmount   Float    @default(2.0) // Default max loss $2
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  // Relations
+  trades          Trade[]
+  
+  @@map("trading_plans")
+}
+
+// Trade Model
+model Trade {
+  id              String      @id @default(cuid())
+  symbol          String      // e.g., "EURUSD", "BTCUSD"
+  type            TradeType   // BUY or SELL
+  status          TradeStatus @default(PENDING)
+  
+  // Entry details
+  entryPrice      Float
+  entryTime       DateTime
+  quantity        Float
+  
+  // Exit details
+  exitPrice       Float?
+  exitTime        DateTime?
+  
+  // Risk management
+  stopLoss        Float
+  takeProfit      Float
+  riskAmount      Float       // Amount risked on this trade
+  rewardAmount    Float       // Potential reward amount
+  
+  // Results
+  pnl             Float?      // Profit/Loss in dollars
+  pnlPercentage   Float?      // Profit/Loss in percentage
+  
+  // Additional info
+  notes           String?
+  screenshot      String?     // URL to screenshot
+  tags            String[]    // Array of tags
+  
+  // Timestamps
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  
+  // Relations
+  tradingPlan     TradingPlan @relation(fields: [tradingPlanId], references: [id])
+  tradingPlanId   String
+  
+  @@map("trades")
+}
+
+// Enums
+enum TradeType {
+  BUY
+  SELL
+}
+
+enum TradeStatus {
+  PENDING
+  OPEN
+  CLOSED
+  CANCELLED
+}
