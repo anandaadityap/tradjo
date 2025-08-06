@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { TradingStats } from "@/components/trading-stats";
+import { TradingCharts } from "@/components/trading-charts";
 import { TradesTable } from "@/components/trades-table";
 import { AddTradeForm } from "@/components/add-trade-form";
 import { EditTradeForm } from "@/components/edit-trade-form";
@@ -389,7 +390,7 @@ export default function Home() {
             <TabsTrigger value="trades">Trades</TabsTrigger>
             <TabsTrigger value="plans">Plans</TabsTrigger>
             <TabsTrigger value="capital">Capital</TabsTrigger>
-            <TabsTrigger value="analytics">Analytics</TabsTrigger>
+            <TabsTrigger value="analytics">Charts</TabsTrigger>
           </TabsList>
 
           {/* Dashboard Tab */}
@@ -531,28 +532,22 @@ export default function Home() {
             )}
           </TabsContent>
 
-          {/* Analytics Tab */}
+          {/* Charts Tab */}
           <TabsContent
             value="analytics"
             className="space-y-6"
           >
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <TrendingUp className="h-5 w-5" />
-                  Performance Analytics
-                </CardTitle>
-                <CardDescription>
-                  Detailed analysis of your trading performance
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <TradingStats stats={stats} />
-                <div className="mt-6 text-center text-muted-foreground">
-                  <p>Advanced analytics coming soon...</p>
-                </div>
-              </CardContent>
-            </Card>
+            <div className="mb-6">
+              <h2 className="text-2xl font-bold flex items-center gap-2">
+                <TrendingUp className="h-6 w-6" />
+                Trading Charts & Analytics
+              </h2>
+              <p className="text-muted-foreground">
+                Visualisasi performa trading Anda dalam berbagai grafik
+              </p>
+            </div>
+
+            <TradingCharts trades={trades} stats={stats} />
           </TabsContent>
         </Tabs>
 
