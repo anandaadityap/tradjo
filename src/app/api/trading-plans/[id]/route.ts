@@ -4,10 +4,11 @@ import { UpdateTradingPlanInput } from '@/lib/types'
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const tradingPlan = await getTradingPlanById(params.id)
+    const { id } = await params
+    const tradingPlan = await getTradingPlanById(id)
     if (!tradingPlan) {
       return NextResponse.json(
         { error: 'Trading plan not found' },
@@ -26,12 +27,13 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const body: Omit<UpdateTradingPlanInput, 'id'> = await request.json()
     const updatedTradingPlan = await updateTradingPlan({
-      id: params.id,
+      id,
       ...body
     })
     return NextResponse.json(updatedTradingPlan)
@@ -46,10 +48,11 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    await deleteTradingPlan(params.id)
+    const { id } = await params
+    await deleteTradingPlan(id)
     return NextResponse.json({ success: true })
   } catch (error) {
     console.error('Error deleting trading plan:', error)

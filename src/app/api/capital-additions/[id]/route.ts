@@ -8,10 +8,11 @@ import { UpdateCapitalAdditionInput } from '@/lib/types'
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const capitalAddition = await getCapitalAdditionById(params.id)
+    const { id } = await params
+    const capitalAddition = await getCapitalAdditionById(id)
 
     if (!capitalAddition) {
       return NextResponse.json(
@@ -32,13 +33,14 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const body: Omit<UpdateCapitalAdditionInput, 'id'> = await request.json()
 
     const capitalAddition = await updateCapitalAddition({
-      id: params.id,
+      id,
       ...body,
       addedAt: body.addedAt ? new Date(body.addedAt) : undefined,
     })
@@ -55,10 +57,11 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    await deleteCapitalAddition(params.id)
+    const { id } = await params
+    await deleteCapitalAddition(id)
     return NextResponse.json({ success: true })
   } catch (error) {
     console.error('Error deleting capital addition:', error)

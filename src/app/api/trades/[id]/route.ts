@@ -4,10 +4,11 @@ import { UpdateTradeInput } from '@/lib/types'
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const trade = await getTradeById(params.id)
+    const { id } = await params
+    const trade = await getTradeById(id)
     if (!trade) {
       return NextResponse.json(
         { error: 'Trade not found' },
@@ -26,12 +27,13 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const body: Omit<UpdateTradeInput, 'id'> = await request.json()
     const updatedTrade = await updateTrade({
-      id: params.id,
+      id,
       ...body
     })
     return NextResponse.json(updatedTrade)
@@ -46,10 +48,11 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    await deleteTrade(params.id)
+    const { id } = await params
+    await deleteTrade(id)
     return NextResponse.json({ success: true })
   } catch (error) {
     console.error('Error deleting trade:', error)
