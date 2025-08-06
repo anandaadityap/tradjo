@@ -1,6 +1,6 @@
 # 📊 TradJo - Trading Journal
 
-**TradJo** adalah aplikasi trading journal modern yang dibangun dengan Next.js, Tailwind CSS, dan shadcn/ui. Aplikasi ini dirancang khusus untuk trader yang ingin melacak performa trading mereka dengan risk management yang ketat.
+**TradJo** adalah aplikasi trading journal modern yang dibangun dengan Next.js, Tailwind CSS, dan shadcn/ui. Aplikasi ini dirancang khusus untuk trader yang ingin melacak performa trading mereka dengan risk management yang ketat dan analytics yang comprehensive.
 
 ## ✨ Fitur Utama
 
@@ -10,26 +10,41 @@
 - **Risk Management**: Auto-calculation berdasarkan risk-reward ratio (default 1:2)
 - **Trading Plans**: Manajemen multiple trading strategies
 - **Real-time Statistics**: Perhitungan performa secara otomatis
+- **Capital Management**: Tracking modal dan penambahan capital
+
+### 📊 **Interactive Charts & Analytics**
+- **Equity Curve**: Area chart untuk tracking pertumbuhan capital over time
+- **Monthly P&L Performance**: Bar chart perbandingan performa bulanan
+- **Win/Loss Ratio**: Pie chart dengan visual win rate analysis
+- **Daily P&L**: Bar chart individual trade performance
+- **Responsive Charts**: Optimized untuk desktop dan mobile
+- **Real-time Data**: Charts update otomatis dengan data terbaru
 
 ### 🎨 **Modern UI/UX**
 - **Responsive Design**: Bekerja optimal di desktop dan mobile
 - **Dark/Light Theme**: Interface yang nyaman untuk mata
 - **Color-coded P&L**: Visual indicators untuk profit (hijau) dan loss (merah)
 - **Interactive Components**: Form yang user-friendly dengan validasi
+- **Professional Dashboard**: Clean dan intuitive interface
 
-### 📈 **Analytics & Reporting**
-- Total P&L tracking
-- Win rate calculation
-- Average win/loss analysis
-- Profit factor metrics
+### 📈 **Advanced Analytics**
+- Total P&L tracking dengan visual trends
+- Win rate calculation dan historical analysis
+- Average win/loss analysis dengan charts
+- Profit factor metrics dan performance indicators
 - Maximum drawdown monitoring
+- Monthly performance comparison
+- Equity curve analysis
 
 ## 🚀 Tech Stack
 
 - **Frontend**: [Next.js 15](https://nextjs.org) dengan App Router
 - **Styling**: [Tailwind CSS](https://tailwindcss.com) + [shadcn/ui](https://ui.shadcn.com)
 - **Database**: PostgreSQL dengan [Prisma ORM](https://prisma.io)
+- **Charts**: [Recharts](https://recharts.org) untuk interactive data visualization
+- **Date Handling**: [date-fns](https://date-fns.org) untuk date formatting dan manipulation
 - **Icons**: [Lucide React](https://lucide.dev)
+- **Runtime**: [Bun](https://bun.sh) untuk fast JavaScript runtime
 - **Language**: TypeScript untuk type safety
 
 ## 📋 Prerequisites
@@ -50,9 +65,11 @@ cd tradjo
 
 ### 2. Install Dependencies
 ```bash
-npm install
-# atau
+# Menggunakan Bun (recommended)
 bun install
+
+# Atau menggunakan npm
+npm install
 ```
 
 ### 3. Database Setup
@@ -71,22 +88,24 @@ DATABASE_URL="postgresql://postgres:postgres@localhost:5432/tradjo?schema=public
 ### 5. Database Migration
 ```bash
 # Generate Prisma client
-npm run db:generate
+bunx prisma generate
 
-# Run database migrations
-npm run db:migrate
+# Push schema ke database
+bunx prisma db push
 
 # Seed dengan sample data
-npm run db:seed
+bunx prisma db seed
 ```
 
 ## 🏃‍♂️ Getting Started
 
 ### Development Server
 ```bash
-npm run dev
-# atau
+# Menggunakan Bun (recommended)
 bun dev
+
+# Atau menggunakan npm
+npm run dev
 ```
 
 Buka [http://localhost:3000](http://localhost:3000) di browser untuk melihat aplikasi.
@@ -95,15 +114,15 @@ Buka [http://localhost:3000](http://localhost:3000) di browser untuk melihat apl
 
 | Command | Description |
 |---------|-------------|
-| `npm run dev` | Menjalankan development server |
-| `npm run build` | Build aplikasi untuk production |
-| `npm run start` | Menjalankan production server |
-| `npm run lint` | Linting code dengan ESLint |
-| `npm run db:generate` | Generate Prisma client |
-| `npm run db:migrate` | Jalankan database migrations |
-| `npm run db:seed` | Seed database dengan sample data |
-| `npm run db:studio` | Buka Prisma Studio (database GUI) |
-| `npm run db:reset` | Reset database (⚠️ hapus semua data) |
+| `bun dev` / `npm run dev` | Menjalankan development server |
+| `bun run build` / `npm run build` | Build aplikasi untuk production |
+| `bun start` / `npm run start` | Menjalankan production server |
+| `bun run lint` / `npm run lint` | Linting code dengan ESLint |
+| `bunx prisma generate` | Generate Prisma client |
+| `bunx prisma db push` | Push schema ke database |
+| `bunx prisma db seed` | Seed database dengan sample data |
+| `bunx prisma studio` | Buka Prisma Studio (database GUI) |
+| `bunx prisma db reset` | Reset database (⚠️ hapus semua data) |
 
 ## 📁 Project Structure
 
@@ -111,6 +130,7 @@ Buka [http://localhost:3000](http://localhost:3000) di browser untuk melihat apl
 tradjo/
 ├── src/
 │   ├── app/                 # Next.js App Router
+│   │   ├── api/             # API routes
 │   │   ├── globals.css      # Global styles
 │   │   ├── layout.tsx       # Root layout
 │   │   └── page.tsx         # Homepage
@@ -118,11 +138,14 @@ tradjo/
 │   │   ├── ui/              # shadcn/ui components
 │   │   ├── trading-stats.tsx
 │   │   ├── trades-table.tsx
+│   │   ├── trading-charts.tsx    # Interactive charts component
 │   │   ├── add-trade-form.tsx
+│   │   ├── capital-management.tsx
 │   │   └── trading-plan-card.tsx
 │   └── lib/                 # Utilities & services
 │       ├── prisma.ts        # Prisma client
 │       ├── services.ts      # Database services
+│       ├── trading-utils.ts # Trading calculations
 │       ├── types.ts         # TypeScript types
 │       └── utils.ts         # Helper functions
 ├── prisma/                  # Database schema & migrations
@@ -138,6 +161,36 @@ Aplikasi mendukung trading plan dengan konfigurasi:
 - **Maximum Loss**: $2 per trade (risk management ketat)
 - **Auto-calculation**: Take profit dihitung otomatis berdasarkan RR ratio
 - **Multiple Plans**: Mendukung berbagai strategi trading
+
+## 📊 Charts & Analytics Features
+
+### **Interactive Data Visualization**
+- **Equity Curve Chart**: 
+  - Area chart menampilkan pertumbuhan capital dari waktu ke waktu
+  - Visualisasi trend performa trading secara keseluruhan
+  - Identifikasi periode profit dan drawdown
+
+- **Monthly P&L Performance**:
+  - Bar chart perbandingan profit/loss per bulan
+  - Color-coded: hijau untuk profit, merah untuk loss
+  - Analisis seasonality dan konsistensi performa
+
+- **Win/Loss Ratio Analysis**:
+  - Pie chart dengan breakdown win vs loss trades
+  - Statistik win rate percentage
+  - Visual representation trading consistency
+
+- **Daily P&L Breakdown**:
+  - Bar chart individual trade performance
+  - Quick identification profitable vs unprofitable trades
+  - Pattern recognition untuk improvement
+
+### **Chart Features**
+- **Responsive Design**: Optimal di semua device sizes
+- **Interactive Tooltips**: Detailed information on hover
+- **Real-time Updates**: Charts update otomatis dengan data baru
+- **Professional Styling**: Clean dan modern visualization
+- **Export Ready**: Charts siap untuk reporting dan analysis
 
 ## 📊 Sample Data
 
@@ -189,11 +242,36 @@ const newTrade = await createTrade({
 ### Manual Deployment
 ```bash
 # Build aplikasi
-npm run build
+bun run build
 
 # Start production server
-npm run start
+bun start
 ```
+
+## 📸 Screenshots & Demo
+
+### 🏠 **Dashboard Overview**
+- Real-time trading statistics dan performance metrics
+- Clean dan intuitive interface dengan color-coded P&L
+- Quick access ke semua fitur utama
+
+### 📊 **Interactive Charts**
+- **Equity Curve**: Visual tracking pertumbuhan capital
+- **Monthly Performance**: Bar chart perbandingan bulanan
+- **Win/Loss Analysis**: Pie chart dengan statistics
+- **Daily P&L**: Individual trade performance
+
+### 📋 **Trade Management**
+- Comprehensive trade tracking dengan detail lengkap
+- Easy add/edit/close trades dengan form validation
+- Real-time P&L calculation dan status updates
+
+### 📱 **Responsive Design**
+- Optimal experience di desktop, tablet, dan mobile
+- Touch-friendly interface untuk mobile trading
+- Consistent design across all devices
+
+> **Live Demo**: Jalankan `bun dev` dan buka `http://localhost:3000` untuk melihat aplikasi secara langsung dengan sample data yang sudah tersedia.
 
 ## 🤝 Contributing
 
