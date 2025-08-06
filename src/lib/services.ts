@@ -11,13 +11,21 @@ import {
 } from './types'
 
 // Trading Plan Services
-export async function createTradingPlan(data: CreateTradingPlanInput) {
+export async function createTradingPlan(data: CreateTradingPlanInput): Promise<TradingPlanWithTrades> {
   return await prisma.tradingPlan.create({
     data: {
       name: data.name,
       description: data.description,
       riskRewardRatio: data.riskRewardRatio || 2.0,
       maxLossAmount: data.maxLossAmount || 2.0,
+      initialCapital: data.initialCapital || 1000.0,
+    },
+    include: {
+      trades: {
+        orderBy: {
+          createdAt: 'desc',
+        },
+      },
     },
   })
 }
@@ -136,8 +144,61 @@ export async function getTradesByStatus(status: TradeStatus): Promise<TradeWithP
 }
 
 // Statistics Services
+// Close Trade with Exit Details
+export async function closeTradeWithExit(
+  tradeId: string, 
+  exitPrice: number, 
+  exitTime?: Date
+): Promise<TradeWithPlan> {
+  // First get the trade to calculate P&L
+  const trade = await prisma.trade.findUnique({
+    where: { id: tradeId },
+    include: { tradingPlan: true }
+  })
+
+  if (!trade) {
+    throw new Error('Trade not found')
+  }
+
+  if (trade.status !== 'OPEN') {
+    throw new Error('Only open trades can be closed')
+  }
+
+  // Calculate P&L
+  const priceDifference = trade.type === 'BUY' 
+    ? exitPrice - trade.entryPrice 
+    : trade.entryPrice - exitPrice
+
+  const pnl = priceDifference * trade.quantity
+  const pnlPercentage = (priceDifference / trade.entryPrice) * 100
+
+  // Update the trade
+  return await prisma.trade.update({
+    where: { id: tradeId },
+    data: {
+      status: 'CLOSED',
+      exitPrice,
+      exitTime: exitTime || new Date(),
+      pnl,
+      pnlPercentage,
+      updatedAt: new Date(),
+    },
+    include: {
+      tradingPlan: true,
+    },
+  })
+}
+
 export async function getTradeStats(tradingPlanId?: string): Promise<TradeStats> {
   const whereClause = tradingPlanId ? { tradingPlanId } : {}
+  
+  // Get trading plan to access initial capital
+  let tradingPlan = null
+  if (tradingPlanId) {
+    tradingPlan = await prisma.tradingPlan.findUnique({
+      where: { id: tradingPlanId }
+    })
+  }
   
   const trades = await prisma.trade.findMany({
     where: {
@@ -145,6 +206,9 @@ export async function getTradeStats(tradingPlanId?: string): Promise<TradeStats>
       status: 'CLOSED',
       pnl: { not: null },
     },
+    include: {
+      tradingPlan: true
+    }
   })
 
   const totalTrades = trades.length
@@ -185,6 +249,12 @@ export async function getTradeStats(tradingPlanId?: string): Promise<TradeStats>
     }
   }
 
+  // Calculate initial capital and return percentage
+  const initialCapital = tradingPlan?.initialCapital || 
+    (trades.length > 0 ? trades[0].tradingPlan.initialCapital : 1000)
+  const currentCapital = initialCapital + totalPnL
+  const totalReturn = initialCapital > 0 ? (totalPnL / initialCapital) * 100 : 0
+
   return {
     totalTrades,
     winningTrades,
@@ -195,5 +265,8 @@ export async function getTradeStats(tradingPlanId?: string): Promise<TradeStats>
     averageLoss,
     profitFactor,
     maxDrawdown,
+    initialCapital,
+    currentCapital,
+    totalReturn,
   }
 }

@@ -40,6 +40,7 @@ export type CreateTradingPlanInput = {
   description?: string
   riskRewardRatio?: number
   maxLossAmount?: number
+  initialCapital?: number
 }
 
 export type UpdateTradingPlanInput = Partial<CreateTradingPlanInput> & {
@@ -58,6 +59,9 @@ export type TradeStats = {
   averageLoss: number
   profitFactor: number
   maxDrawdown: number
+  initialCapital: number
+  currentCapital: number
+  totalReturn: number // Percentage return from initial capital
 }
 
 export { TradeType, TradeStatus }

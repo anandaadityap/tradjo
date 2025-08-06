@@ -7,15 +7,28 @@ import { Button } from "@/components/ui/button"
 import { TradingStats } from "@/components/trading-stats"
 import { TradesTable } from "@/components/trades-table"
 import { AddTradeForm } from "@/components/add-trade-form"
+import { AddTradingPlanForm } from "@/components/add-trading-plan-form"
 import { TradingPlanCard } from "@/components/trading-plan-card"
-import { BarChart3, TrendingUp, Plus, Target } from "lucide-react"
+import { CloseTradeDialog } from "@/components/close-trade-dialog"
+import { BarChart3, TrendingUp, Target } from "lucide-react"
 import { 
   TradeWithPlan, 
   TradingPlanWithTrades, 
-  CreateTradeInput, 
+  CreateTradeInput,
+  CreateTradingPlanInput,
   TradeStats as TradeStatsType,
   TradeStatus 
 } from "@/lib/types"
+import {
+  fetchTradingPlans,
+  createTradingPlanAPI,
+  fetchTrades,
+  createTradeAPI,
+  deleteTradeAPI,
+  updateTradeAPI,
+  closeTradeAPI,
+  fetchStats
+} from "@/lib/api-client"
 
 // Mock data untuk demo
 const mockTradingPlans: TradingPlanWithTrades[] = [
@@ -25,6 +38,7 @@ const mockTradingPlans: TradingPlanWithTrades[] = [
     description: "Low risk, steady gains with 1:2 risk-reward ratio",
     riskRewardRatio: 2.0,
     maxLossAmount: 2.0,
+    initialCapital: 1000.0,
     isActive: true,
     createdAt: new Date(),
     updatedAt: new Date(),
@@ -36,6 +50,7 @@ const mockTradingPlans: TradingPlanWithTrades[] = [
     description: "Higher risk for potentially higher returns",
     riskRewardRatio: 3.0,
     maxLossAmount: 5.0,
+    initialCapital: 2000.0,
     isActive: false,
     createdAt: new Date(),
     updatedAt: new Date(),
@@ -115,12 +130,36 @@ const mockTrades: TradeWithPlan[] = [
     updatedAt: new Date(),
     tradingPlanId: "1",
     tradingPlan: mockTradingPlans[0]
+  },
+  {
+    id: "4",
+    symbol: "USDJPY",
+    type: "SELL",
+    status: "OPEN" as TradeStatus,
+    entryPrice: 150.25,
+    entryTime: new Date("2024-01-18T14:30:00"),
+    quantity: 10000,
+    exitPrice: null,
+    exitTime: null,
+    stopLoss: 151.25,
+    takeProfit: 148.25,
+    riskAmount: 100,
+    rewardAmount: 200,
+    pnl: null,
+    pnlPercentage: null,
+    notes: "Resistance rejection, expecting downward move",
+    screenshot: null,
+    tags: ["resistance", "reversal"],
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    tradingPlanId: "1",
+    tradingPlan: mockTradingPlans[0]
   }
 ]
 
 export default function Home() {
-  const [trades, setTrades] = useState<TradeWithPlan[]>(mockTrades)
-  const [tradingPlans] = useState<TradingPlanWithTrades[]>(mockTradingPlans)
+  const [trades, setTrades] = useState<TradeWithPlan[]>([])
+  const [tradingPlans, setTradingPlans] = useState<TradingPlanWithTrades[]>([])
   const [stats, setStats] = useState<TradeStatsType>({
     totalTrades: 0,
     winningTrades: 0,
@@ -130,62 +169,149 @@ export default function Home() {
     averageWin: 0,
     averageLoss: 0,
     profitFactor: 0,
-    maxDrawdown: 0
+    maxDrawdown: 0,
+    initialCapital: 1000,
+    currentCapital: 1000,
+    totalReturn: 0
+  })
+  const [loading, setLoading] = useState(true)
+  const [activePlan, setActivePlan] = useState<string>('')
+  
+  // Close Trade Dialog State
+  const [closeTradeDialog, setCloseTradeDialog] = useState<{
+    open: boolean
+    trade: TradeWithPlan | null
+  }>({
+    open: false,
+    trade: null
   })
 
-  // Calculate statistics
-  useEffect(() => {
-    const closedTrades = trades.filter(trade => trade.status === "CLOSED" && trade.pnl !== null)
-    const winningTrades = closedTrades.filter(trade => trade.pnl! > 0)
-    const losingTrades = closedTrades.filter(trade => trade.pnl! < 0)
-    
-    const totalPnL = closedTrades.reduce((sum, trade) => sum + trade.pnl!, 0)
-    const grossProfit = winningTrades.reduce((sum, trade) => sum + trade.pnl!, 0)
-    const grossLoss = Math.abs(losingTrades.reduce((sum, trade) => sum + trade.pnl!, 0))
-    
-    const newStats: TradeStatsType = {
-      totalTrades: closedTrades.length,
-      winningTrades: winningTrades.length,
-      losingTrades: losingTrades.length,
-      winRate: closedTrades.length > 0 ? (winningTrades.length / closedTrades.length) * 100 : 0,
-      totalPnL,
-      averageWin: winningTrades.length > 0 ? grossProfit / winningTrades.length : 0,
-      averageLoss: losingTrades.length > 0 ? grossLoss / losingTrades.length : 0,
-      profitFactor: grossLoss > 0 ? grossProfit / grossLoss : grossProfit > 0 ? 999 : 0,
-      maxDrawdown: 0 // Simplified for demo
+  // Load trading plans from database
+  const loadTradingPlans = async () => {
+    try {
+      setLoading(true)
+      const [plans, allTrades] = await Promise.all([
+        fetchTradingPlans(),
+        fetchTrades()
+      ])
+      
+      setTradingPlans(plans)
+      setTrades(allTrades)
+      
+      // Set first active plan or first plan as active
+      const activePlanFromDb = plans.find(plan => plan.isActive)
+      if (activePlanFromDb) {
+        setActivePlan(activePlanFromDb.id)
+      } else if (plans.length > 0) {
+        setActivePlan(plans[0].id)
+      }
+    } catch (error) {
+      console.error('Error loading trading data:', error)
+    } finally {
+      setLoading(false)
     }
-    
-    setStats(newStats)
-  }, [trades])
+  }
 
-  const handleAddTrade = (tradeInput: CreateTradeInput) => {
-    const newTrade: TradeWithPlan = {
-      id: Date.now().toString(),
-      ...tradeInput,
-      notes: tradeInput.notes || null,
-      tags: tradeInput.tags || [],
-      status: "PENDING" as TradeStatus,
-      entryTime: new Date(),
-      pnl: null,
-      pnlPercentage: null,
-      exitPrice: null,
-      exitTime: null,
-      screenshot: null,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      tradingPlan: tradingPlans.find(plan => plan.id === tradeInput.tradingPlanId)!
-    }
+  // Load stats for active plan
+  const loadStats = async () => {
+    if (!activePlan) return
     
-    setTrades(prev => [newTrade, ...prev])
+    try {
+      const newStats = await fetchStats(activePlan)
+      setStats(newStats)
+    } catch (error) {
+      console.error('Error loading stats:', error)
+    }
+  }
+
+  useEffect(() => {
+    loadTradingPlans()
+  }, [])
+
+  useEffect(() => {
+    loadStats()
+  }, [activePlan])
+
+  const activeTradingPlan = tradingPlans.find(plan => plan.id === activePlan)
+  const allTrades = tradingPlans.flatMap(plan => plan.trades || [])
+
+  const handleAddTrade = async (tradeInput: CreateTradeInput) => {
+    try {
+      const newTrade = await createTradeAPI(tradeInput)
+      setTrades(prev => [newTrade, ...prev])
+      // Reload stats after adding trade
+      loadStats()
+    } catch (error) {
+      console.error('Error adding trade:', error)
+    }
   }
 
   const handleEditTrade = (trade: TradeWithPlan) => {
-    // TODO: Implement edit functionality
+    // TODO: Implement edit functionality - open edit dialog
     console.log("Edit trade:", trade)
   }
 
-  const handleDeleteTrade = (tradeId: string) => {
-    setTrades(prev => prev.filter(trade => trade.id !== tradeId))
+  const handleDeleteTrade = async (tradeId: string) => {
+    try {
+      await deleteTradeAPI(tradeId)
+      setTrades(prev => prev.filter(trade => trade.id !== tradeId))
+      // Reload stats after deleting trade
+      loadStats()
+    } catch (error) {
+      console.error('Error deleting trade:', error)
+    }
+  }
+
+  const handleCloseTrade = (trade: TradeWithPlan) => {
+    setCloseTradeDialog({
+      open: true,
+      trade
+    })
+  }
+
+  const handleAddTradingPlan = async (planInput: CreateTradingPlanInput) => {
+     try {
+       const newPlan = await createTradingPlanAPI(planInput)
+       const newPlanWithTrades: TradingPlanWithTrades = {
+         ...newPlan,
+         trades: newPlan.trades || []
+       }
+       setTradingPlans(prev => [...prev, newPlanWithTrades])
+       
+       // Set as active plan if it's the first one
+       if (tradingPlans.length === 0) {
+         setActivePlan(newPlan.id)
+       }
+     } catch (error) {
+       console.error('Error adding trading plan:', error)
+     }
+   }
+
+  const handleCloseTradeSubmit = async (tradeId: string, exitPrice: number, exitTime?: Date) => {
+    try {
+      const updatedTrade = await closeTradeAPI(tradeId, exitPrice, exitTime || new Date())
+      setTrades(prev => prev.map(trade => 
+        trade.id === tradeId ? updatedTrade : trade
+      ))
+      // Reload stats after closing trade
+      loadStats()
+      
+      // Close the dialog
+      setCloseTradeDialog({ open: false, trade: null })
+    } catch (error) {
+      console.error('Error closing trade:', error)
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading trading data...</p>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -231,9 +357,10 @@ export default function Home() {
                   </CardHeader>
                   <CardContent>
                     <TradesTable 
-                      trades={trades.slice(0, 5)} 
+                      trades={trades.filter(trade => trade.tradingPlanId === activePlan).slice(0, 5)} 
                       onEditTrade={handleEditTrade}
                       onDeleteTrade={handleDeleteTrade}
+                      onCloseTrade={handleCloseTrade}
                     />
                   </CardContent>
                 </Card>
@@ -248,9 +375,9 @@ export default function Home() {
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    {tradingPlans.find(plan => plan.isActive) ? (
+                    {activeTradingPlan ? (
                       <TradingPlanCard 
-                        plan={tradingPlans.find(plan => plan.isActive)!} 
+                        plan={activeTradingPlan} 
                       />
                     ) : (
                       <p className="text-muted-foreground text-center py-4">
@@ -281,6 +408,7 @@ export default function Home() {
                   trades={trades} 
                   onEditTrade={handleEditTrade}
                   onDeleteTrade={handleDeleteTrade}
+                  onCloseTrade={handleCloseTrade}
                 />
               </CardContent>
             </Card>
@@ -293,10 +421,7 @@ export default function Home() {
                 <h2 className="text-2xl font-bold">Trading Plans</h2>
                 <p className="text-muted-foreground">Manage your trading strategies</p>
               </div>
-              <Button>
-                <Plus className="h-4 w-4 mr-2" />
-                New Plan
-              </Button>
+              <AddTradingPlanForm onAddPlan={handleAddTradingPlan} />
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -327,6 +452,14 @@ export default function Home() {
             </Card>
           </TabsContent>
         </Tabs>
+        
+        {/* Close Trade Dialog */}
+        <CloseTradeDialog
+          trade={closeTradeDialog.trade}
+          open={closeTradeDialog.open}
+          onOpenChange={(open) => setCloseTradeDialog(prev => ({ ...prev, open }))}
+          onCloseTrade={handleCloseTradeSubmit}
+        />
       </div>
     </div>
   )

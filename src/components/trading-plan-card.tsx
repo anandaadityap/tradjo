@@ -3,7 +3,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Target, DollarSign, TrendingUp, Settings } from "lucide-react"
+import { Target, DollarSign, TrendingUp, Settings, PiggyBank } from "lucide-react"
 import { TradingPlanWithTrades } from "@/lib/types"
 
 interface TradingPlanCardProps {
@@ -15,6 +15,7 @@ export function TradingPlanCard({ plan, onEdit }: TradingPlanCardProps) {
   const activeTrades = plan.trades.filter(trade => trade.status === "OPEN").length
   const totalTrades = plan.trades.length
   const totalPnL = plan.trades.reduce((sum, trade) => sum + (trade.pnl || 0), 0)
+  const totalReturn = plan.initialCapital > 0 ? (totalPnL / plan.initialCapital) * 100 : 0
 
   return (
     <Card className={`transition-all hover:shadow-md ${plan.isActive ? 'border-blue-200 bg-blue-50/30' : 'border-gray-200'}`}>
@@ -45,38 +46,51 @@ export function TradingPlanCard({ plan, onEdit }: TradingPlanCardProps) {
       </CardHeader>
       <CardContent className="space-y-4">
         {/* Risk Management */}
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-3 gap-3">
+          <div className="flex items-center gap-2">
+            <PiggyBank className="h-4 w-4 text-indigo-600" />
+            <div>
+              <p className="text-xs font-medium">Dana Awal</p>
+              <p className="text-sm font-bold text-indigo-600">${plan.initialCapital}</p>
+            </div>
+          </div>
           <div className="flex items-center gap-2">
             <Target className="h-4 w-4 text-blue-600" />
             <div>
-              <p className="text-sm font-medium">Risk:Reward</p>
-              <p className="text-lg font-bold text-blue-600">1:{plan.riskRewardRatio}</p>
+              <p className="text-xs font-medium">Risk:Reward</p>
+              <p className="text-sm font-bold text-blue-600">1:{plan.riskRewardRatio}</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
             <DollarSign className="h-4 w-4 text-red-600" />
             <div>
-              <p className="text-sm font-medium">Max Loss</p>
-              <p className="text-lg font-bold text-red-600">${plan.maxLossAmount}</p>
+              <p className="text-xs font-medium">Max Loss</p>
+              <p className="text-sm font-bold text-red-600">${plan.maxLossAmount}</p>
             </div>
           </div>
         </div>
 
         {/* Statistics */}
         <div className="border-t pt-4">
-          <div className="grid grid-cols-3 gap-4 text-center">
+          <div className="grid grid-cols-4 gap-3 text-center">
             <div>
-              <p className="text-sm text-muted-foreground">Total Trades</p>
-              <p className="text-lg font-semibold">{totalTrades}</p>
+              <p className="text-xs text-muted-foreground">Total Trades</p>
+              <p className="text-sm font-semibold">{totalTrades}</p>
             </div>
             <div>
-              <p className="text-sm text-muted-foreground">Active</p>
-              <p className="text-lg font-semibold text-blue-600">{activeTrades}</p>
+              <p className="text-xs text-muted-foreground">Active</p>
+              <p className="text-sm font-semibold text-blue-600">{activeTrades}</p>
             </div>
             <div>
-              <p className="text-sm text-muted-foreground">Total P&L</p>
-              <p className={`text-lg font-semibold ${totalPnL >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+              <p className="text-xs text-muted-foreground">Total P&L</p>
+              <p className={`text-sm font-semibold ${totalPnL >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                 ${totalPnL.toFixed(2)}
+              </p>
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground">Return %</p>
+              <p className={`text-sm font-semibold ${totalReturn >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                {totalReturn.toFixed(1)}%
               </p>
             </div>
           </div>

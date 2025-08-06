@@ -21,6 +21,7 @@ model TradingPlan {
   description     String?
   riskRewardRatio Float    @default(2.0) // Default 1:2 risk reward
   maxLossAmount   Float    @default(2.0) // Default max loss $2
+  initialCapital  Float    @default(1000.0) // Initial trading capital
   isActive        Boolean  @default(true)
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
